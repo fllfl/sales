@@ -51,7 +51,8 @@ export default class App extends Component {
   constructor() {
     super();
     const networkInterface = createNetworkInterface({
-      uri: 'http://172.104.55.56:5003/graphql'
+      //uri: 'http://172.104.55.56:5003/graphql'
+      uri: 'http://192.168.20.101:5003/graphql',
     });
     this.client = new ApolloClient({
       networkInterface: networkInterface,
