@@ -42,16 +42,17 @@ class ViewOrder extends Component {
   }
 
   renderItems() {
-    const supplierAcc = this.props.data.viewer.organisation.supplierAccounts.edges[0].node;
-    const order = supplierAcc.currentOrder;
-    if(order) {
-      return order.items.edges.map(e => e.node).map(i => this.renderItem(i));
+    const supplierAccEdge = this.props.data.viewer.organisation.supplierAccounts.edges[0];
+    if(!(supplierAccEdge && supplierAccEdge.node.currentOrder)) {
+      return null;
     }
-    return null;
+    const order = supplierAccEdge.node.currentOrder;
+    return order.items.edges.map(e => e.node).map(i => this.renderItem(i));
   }
 
   render() {
     const items = this.renderItems();
+    console.log(this.props.data);
     return (
       <ScrollView>
         { items }

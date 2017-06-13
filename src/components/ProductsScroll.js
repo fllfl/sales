@@ -65,11 +65,11 @@ class ProductsScroll extends Component {
   }
 
   renderItems() {
-    if(!this.props.data.viewer) {
+    const supplierAccEdge = this.props.data.viewer.organisation.supplierAccounts.edges[0];
+    if(!supplierAccEdge) {
       return null;
     }
-    const supplierAcc = this.props.data.viewer.organisation.supplierAccounts.edges[0].node;
-    const listing = supplierAcc.customerGroup.currentListing;
+    const listing = supplierAccEdge.node.customerGroup.currentListing;
     if(listing) {
       return listing.items.edges.map(e => e.node).map(i => this.renderItem(i));
     }
@@ -91,6 +91,11 @@ class ProductsScroll extends Component {
   }
 
   render() {
+    console.log(this.props.data);
+    if(!this.props.data.viewer) {
+      return null;
+    }
+
     const items = this.renderItems();
     const addToOrder = this.renderAddToOrder();
      if(addToOrder) {
