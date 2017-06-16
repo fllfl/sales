@@ -17,10 +17,12 @@ export default class AuthService {
   login(options = {}) {
     const setToken = (auth) => AsyncStorage.setItem(`auth-${this.clientId}`, JSON.stringify(auth));
     return new Promise(resolve => {
-      this.lock.show(options, (err, profile, token) => {
-        setToken({ profile, token }).then(() => resolve({ profile, token }));
+      this.lock.show(Object.assign({}, options, { scopes: 'offiline_access' },
+        (err, profile, token) => {
+          console.log(token)
+          setToken({ profile, token }).then(() => resolve({ profile, token }));
+        }));
       });
-    });
   }
 
   isTokenGood({ token }) {
