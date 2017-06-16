@@ -20,7 +20,6 @@ export default class AuthService {
   }
 
   login(options = {}) {
-
     const onLogin = (err, profile, token, resolve, reject) => {
       if(err) {
         this.setToken(null)
