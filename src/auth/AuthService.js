@@ -16,13 +16,13 @@ export default class AuthService {
   }
 
   setToken(auth){
-    return AsyncStorage.setItem(`auth-${this.clientId}`, JSON.stringify(auth));
+    return AsyncStorage.setItem(`auth`, JSON.stringify(auth));
   }
 
   login(options = {}) {
     const onLogin = (err, profile, token, resolve, reject) => {
       if(err) {
-        this.setToken(null)
+        this.logout();
         reject(err);
       }
       this.setToken({ profile, token }).then(() => resolve({ profile, token }));
@@ -30,7 +30,7 @@ export default class AuthService {
 
     const standardOptions =  {
       closable: true,
-      scopes: 'offiline_access',
+      //scopes: 'offiline_access',
       authParams: {
         connection: 'Username-Password-Authentication',
       },
@@ -64,15 +64,14 @@ export default class AuthService {
     });
   }
 
-
   getToken() {
     return new Promise(
-      resolve => AsyncStorage.getItem(`auth-${this.clientId}`).then(
+      resolve => AsyncStorage.getItem(`auth`).then(
         (result) => resolve(JSON.parse(result))));
   }
 
   logout() {
     // Clear user token and profile data from local storage
-    AsyncStorage.removeItem(`auth-${this.clientId}`);
+    AsyncStorage.removeItem(`auth`);
   }
 }

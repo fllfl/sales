@@ -11,9 +11,10 @@
     "react": "16.0.0-alpha.6",
     "react-apollo": "^1.2.0",
     "react-native": "0.44.0",
+    "react-native-awesome-card-io": "^0.6.4",
     "react-native-drawer": "^2.3.0",
     "react-native-elements": "^0.12.2",
-    "react-native-lock": "latest",
+    "react-native-lock": "^0.6.0",
     "react-native-pin-code": "^0.0.2",
     "react-native-vector-icons": "^4.1.1"
   },

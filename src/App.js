@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import {
   View,
-  Dimensions,
+  Text,
   Image,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import { Tabs, Tab, Icon } from 'react-native-elements';
+
 import ErrorUtils from 'ErrorUtils';
-import ProductsScroll from './components/ProductsScroll';
-import ViewOrder from './components/ViewOrder';
+import TabsContainer from './components/TabsContainer';
 import AuthService from './auth/AuthService';
 import Auth0Credentials from './auth/Auth0Credentials';
 
@@ -16,42 +17,11 @@ import { gql, graphql } from 'react-apollo';
 
 const auth0 = new AuthService(Auth0Credentials.clientId, Auth0Credentials.uri);
 
-const styles = {
-  container: {
-    backgroundColor: '#fff',
-    paddingTop: 30,
-  },
-  tabs: {
-    title: {
-      fontWeight: 'bold',
-      fontSize: 9,
-    },
-    selectedTitle: {
-      marginTop: -1,
-      marginBottom: 6
-    },
-    icon: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: 14
-    },
-
-  }
-}
-
-const colors = {
-  selectedIcon: '#6296f9',
-  icon: '#5e6977',
-}
-
 const toBind = [
-  'renderTabs',
-  'changeTab',
-  'renderIcon',
-  'renderSelectedIcon',
-  'renderTabContent',
   'setupApollo',
   'checkAuth',
+  'login',
+  'isErrorState',
 ];
 
 export default class App extends Component {
@@ -59,7 +29,7 @@ export default class App extends Component {
   constructor() {
     super();
     this.state = {
-      selectedTab: 'offers',
+      client: null,
       auth: null,
     };
 
@@ -85,18 +55,35 @@ export default class App extends Component {
     this.setupAuth();
   }
 
+  componentWillReceiveProps(nextProps, nextState) {
+
+    console.log("asdasd", nextProps, nextState);
+
+    if(!nextState.auth) {
+      this.login();
+    }
+    if(!(nextState.client && !nextState.client.error)) {
+      auth0.logout();
+      this.setState({
+        auth: null,
+      });
+    }
+  }
+
   onLoggedIn(auth) {
     if(!auth) {
-      return;
+      this.setState({
+        auth: null,
+      });
     }
     console.log(auth);
     this.setState({
       auth,
     });
 
-    this.authInterval = setInterval(() => {
+    /*this.authInterval = setInterval(() => {
       this.checkAuth();
-    }, 60000);
+    }, 5000);*/
 
     this.setupApollo();
   }
@@ -110,17 +97,23 @@ export default class App extends Component {
     }
   }
 
-  setupAuth() {
+  login() {
     auth0.login({connections: ["touchid"]}).then(
       auth => this.onLoggedIn(auth));
-    /*auth0.isLoggedIn().then(isLoggedIn => {
+  }
+
+  setupAuth() {
+
+    return this.login();
+
+    auth0.isLoggedIn().then(isLoggedIn => {
       if(isLoggedIn) {
         auth0.getToken()
           .then((auth) => this.onLoggedIn(auth));
       } else {
-
+        this.login();
       }
-    });*/
+    });
   }
 
   setupApollo() {
@@ -143,82 +136,18 @@ export default class App extends Component {
       networkInterface: networkInterface,
       dataIdFromObject: r => r.id,
     });
+
     this.setState({
       client,
     });
 
   }
 
-
-  changeTab(selectedTab) {
-    this.setState({selectedTab})
-  }
-
-  renderIcon(name) {
-    return (
-      <Icon containerStyle={styles.icon} color={colors.icon} name={name} size={33} />
-    );
-  }
-
-  renderSelectedIcon(name) {
-    return (
-      <Icon color={styles.icon} name={name} size={30} />
-    );
-  }
-
-  renderTabContent(text) {
-
-    switch (text) {
-      case 'offers':
-        return (
-          <ProductsScroll />
-        );
-      case 'my orders':
-        return (
-          <ViewOrder />
-        );
-    }
-
-  }
-
-  renderWaiting() {
-    const { height, width } = Dimensions.get('window');
-    const fullScrn = {width, height};
-    return (
-      <View style={fullScrn} />
-    )
-  }
-
-  renderTab(text, iconName) {
-    return (
-      <Tab
-        titleStyle={styles.tabs.title}
-        selectedTitleStyle={styles.tabs.selectedTitle}
-        selected={ this.state.selectedTab === text }
-        title={text}
-        renderIcon={() => this.renderIcon(iconName)}
-        renderSelectedIcon={() => this.renderSelectedIcon(iconName)}
-        onPress={() => this.changeTab(text)}>
-        { this.renderTabContent(text) }
-      </Tab>
-    )
-  }
-
-  renderTabs() {
-    return (
-      <Tabs>
-        { this.renderTab('offers', 'local-offer') }
-        { this.renderTab('my orders', 'history') }
-      </Tabs>
-    );
-  }
-
   renderError() {
     const { height, width } = Dimensions.get('window');
-    const fullScrn = {width, height};
-    console.log('error')
+    const fullScrn = { width, height };
     return (
-      <View style={ [styles.container, fullScrn ] }>
+      <View style={ fullScrn }>
         <Image
           source={require('./images/error.png')}
           style={fullScrn}
@@ -228,23 +157,24 @@ export default class App extends Component {
     );
   }
 
-  render() {
-    const { height, width } = Dimensions.get('window');
-    console.log(this.state.client)
-    if(this.state.selectedTab === 'error') {
-      return this.renderError();
-    }
-    if(!(this.state.auth && this.state.client)) {
-      return this.renderWaiting();
+  isErrorState() {
+    const { client, auth } = this.state;
+    const err = !(client && !client.error);
+    if(client) {
+      console.log(client.error);
     }
 
-    const tabs = this.renderTabs();
+    return err;
+  }
+
+  render() {
+    if(this.isErrorState()) {
+      return this.renderError();
+    }
     return (
       <ApolloProvider
         client={this.state.client}>
-        <View style={ [styles.container, { width, height }] }>
-          { tabs }
-        </View>
+        <TabsContainer />
       </ApolloProvider>
     );
   }

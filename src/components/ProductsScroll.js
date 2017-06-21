@@ -3,9 +3,11 @@ import {
   ScrollView,
   Text,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { Card, ListItem, Button } from 'react-native-elements'
 import {  gql, graphql } from 'react-apollo';
-import SupplierAccounts from '../queries/SupplierAccounts';
+import SupplierAccListing from '../queries/SupplierAccListing';
 import AddToOrderForm from './AddToOrderForm';
 
 const styles = {
@@ -29,27 +31,29 @@ class ProductsScroll extends Component {
     };
   }
 
-  renderItem(item) {
+  renderItem(item, { seen, confirmed, cancelled }) {
+    const { price, state, id } = item;
     const description = `
-      ${item.state.stateOf.otherNames}
-      ${item.state.stateOf.description}
+      ${state.stateOf.description}
     `;
     const title = `
-      ${item.state.stateOf.fullName}
-      ${item.state.fullName} - $${item.price}.00
+      ${state.stateOf.fullName}
+      ${state.fullName} - $${price}.00
     `;
+
     const onPress = () => this.onOrderButtonPress(item);
+
     return (
       <Card
-        key={ `product-card-${item.id}` }
+        key={ `product-card-${id}` }
         title={title}
-        image={ { uri: item.state.stateOf.image } }>
+        image={ { uri: state.stateOf.image } }>
         <Text style={styles.cardText}>
           { description }
         </Text>
         <Button
           icon={{name: 'code'}}
-          backgroundColor='#03A9F4'
+          backgroundColor={'#03A9F4'}
           buttonStyle={styles.buyButtonStyle}
           title='ORDER NOW'
           onPress={onPress}
@@ -71,7 +75,7 @@ class ProductsScroll extends Component {
     }
     const listing = supplierAccEdge.node.customerGroup.currentListing;
     if(listing) {
-      return listing.items.edges.map(e => e.node).map(i => this.renderItem(i));
+      return listing.items.edges.map(e => e.node).map(i => this.renderItem(i, listing));
     }
     return null;
   }
@@ -119,7 +123,7 @@ export default graphql(gql`
       organisation {
         id
         name
-        ${SupplierAccounts}
+        ${SupplierAccListing}
       }
     }
   }

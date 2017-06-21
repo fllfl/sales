@@ -3154,6 +3154,10 @@ react-native-auth0@^0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/react-native-auth0/-/react-native-auth0-0.0.1.tgz#6a712cc0f00740337396205bc3da453f52d25026"
 
+react-native-awesome-card-io@^0.6.4:
+  version "0.6.4"
+  resolved "https://registry.yarnpkg.com/react-native-awesome-card-io/-/react-native-awesome-card-io-0.6.4.tgz#971ed3e79f905fa4f7aa84e378b79ff279acec97"
+
 react-native-drawer@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/react-native-drawer/-/react-native-drawer-2.3.0.tgz#a0369ec80ff0b61c9f152dbdea91fe76c843113a"
@@ -3170,7 +3174,7 @@ react-native-elements@^0.12.2:
     react-native-side-menu "^0.20.1"
     react-native-tab-navigator "^0.3.3"
 
-react-native-lock@latest:
+react-native-lock@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/react-native-lock/-/react-native-lock-0.6.0.tgz#2fc40caf74e60b7516b2faeee975271a71696c49"
   dependencies:

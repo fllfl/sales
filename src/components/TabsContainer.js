@@ -3,17 +3,21 @@ import {
   View,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Tabs, Tab, Icon } from 'react-native-elements';
-import ProductsScroll from './components/ProductsScroll';
-import ViewOrder from './components/ViewOrder';
+import {  gql, graphql } from 'react-apollo';
 
-const auth0 = new AuthService(Auth0Credentials.clientId, Auth0Credentials.uri);
+import ProductsScroll from './ProductsScroll';
+import ViewOrder from './ViewOrder';
 
 const styles = {
   container: {
     backgroundColor: '#fff',
     paddingTop: 30,
+  },
+  activityIndicator: {
+    position: 'absolute',
   },
   tabs: {
     title: {
@@ -29,7 +33,6 @@ const styles = {
       alignItems: 'center',
       marginTop: 14
     },
-
   }
 }
 
@@ -42,11 +45,12 @@ const toBind = [
   'renderTabs',
   'changeTab',
   'renderIcon',
-  'renderSelectedIcon',``
+  'renderSelectedIcon',
   'renderTabContent',
+  'renderActivityIndicator',
 ];
 
-export default class TabsContainer extends Component {
+class TabsContainer extends Component {
 
   constructor() {
     super();
@@ -57,6 +61,26 @@ export default class TabsContainer extends Component {
     toBind.forEach(funcName => {
       this[funcName] = this[funcName].bind(this);
     });
+  }
+
+  renderActivityIndicator() {
+    const { data } = this.props;
+    const isOn = !(data && (data.networkStatus === 7));
+    const { height, width } = Dimensions.get('window');
+    const st = [
+      styles.activityIndicator,
+      {
+        top: height * 0.45,
+        left: (width / 2) - 25,
+      }
+    ];
+    return (
+      <ActivityIndicator
+        size={'large'}
+        style={ st }
+        animating={ isOn }
+      />
+    );
   }
 
   changeTab(selectedTab) {
@@ -93,6 +117,12 @@ export default class TabsContainer extends Component {
   }
 
   renderTab(text, iconName) {
+    const content = (
+      <View>
+        { this.renderTabContent(text) }
+        { this.renderActivityIndicator() }
+      </View>
+    );
     return (
       <Tab
         titleStyle={styles.tabs.title}
@@ -102,7 +132,7 @@ export default class TabsContainer extends Component {
         renderIcon={() => this.renderIcon(iconName)}
         renderSelectedIcon={() => this.renderSelectedIcon(iconName)}
         onPress={() => this.changeTab(text)}>
-        { this.renderTabContent(text) }
+        { content }
       </Tab>
     )
   }
@@ -125,5 +155,17 @@ export default class TabsContainer extends Component {
       </View>
     );
   }
-
 }
+
+export default graphql(gql`
+  query RootQueries {
+    viewer {
+      id
+      email
+      organisation {
+        id
+        name
+      }
+    }
+  }
+`, { options: {}})(TabsContainer);

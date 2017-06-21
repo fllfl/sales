@@ -1,5 +1,5 @@
-import CurrentOrder from './CurrentOrder';
 import CurrentListing from './CurrentListing';
+import CurrentOrder from './CurrentOrder';
 export default `
   supplierAccounts(first: 99) {
     edges {
@@ -7,6 +7,7 @@ export default `
         id
         ${CurrentOrder}
         customerGroup {
+          id
           ${CurrentListing}
         }
       }

@@ -15,7 +15,7 @@ class CreateMessageMutation extends Relay.Mutation {
       text: this.props.text,
       messageThread_id: this.props.messageThread_id,
       organisation_id: this.props.organisation_id,
-      image: this.props.image
+      image: this.props.image,
     };
   }
 
