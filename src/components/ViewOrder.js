@@ -6,32 +6,33 @@ import {
   View,
   Image,
 } from 'react-native';
-import { PricingCard, ListItem, Button, Tile } from 'react-native-elements'
+import { PricingCard, ListItem, Button, Card, List } from 'react-native-elements'
 import {  gql, graphql } from 'react-apollo';
 import SupplierAccOrder from '../queries/SupplierAccOrder';
 import AddToOrderForm from './AddToOrderForm';
 
 const styles = {
-  cardText: {
-    marginBottom: 10
-  },
-  cardImage: {
-    backgroundColor: '#fff',
-  },
   buyButtonStyle: {
     borderRadius: 0,
     marginLeft: 0,
     marginRight: 0,
     marginBottom: 0
   },
-  totalsText: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
+  wrapper: {
+    padding: 0,
+    left: 0,
+    top: 0,
+    margin: 0,
   },
-  totalItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  totalsText: {
+    textAlign: 'right',
+    right: 0,
+    color: '#86939e',
+    fontSize: 13.79999,
+    fontWeight: '600',
+  },
+  totalsTextWrapper: {
+    marginTop: 5,
   }
 }
 
@@ -102,33 +103,55 @@ class ViewOrder extends Component {
     )
   }
 
+  renderTotalsList() {
+    const items = this.getOrder().totals.map((t, i) => (
+      <ListItem
+        roundAvatar
+        key={`totals Text ListItem ${i}`}
+        title={t.state.stateOf.fullName}
+        subtitle={`${t.state.fullName}    ${t.amount}kg    $${t.price.toFixed(2)}`}
+        avatar={{uri:t.state.stateOf.image}}
+        hideChevron={ true }
+      />
+    ));
+    return (
+      <List style={styles.totalsList}>
+        { items }
+      </List>
+    );
+  }
+
+  renderTotalPrice() {
+    const totalPrice = this.getOrder().totalPrice;
+    const priceDesc = `total: $${totalPrice.toFixed(2)}`;
+    const taxDesc = `GST: $${(totalPrice * 0.15).toFixed(2)}`;
+    return [priceDesc, taxDesc].map((desc, i) => (
+      <View
+        key={`total-${desc}-${i}`}
+        style={styles.totalsTextWrapper}
+      >
+        <Text style={styles.totalsText}>
+          { desc }
+        </Text>
+      </View>
+    ));
+  }
+
   renderOrderStatus() {
     const order = this.getOrder();
     if(!order) {
       return null;
     }
-    const { id, name, listing, totals } = order;
-    const totalsText = totals.map((t) => {
-      console.log("T", t)
-      const name = `${t.state.stateOf.fullName} - ${t.state.fullName}`;
-      const totalText = `${t.amount}kg $${t.price} inc GST $${(t.price * 0.15).toFixed(2)}`;
-      return (
-        <View style={styles.totalItem}>
-          <Text>{ name }</Text>
-          <Text>{ totalText }</Text>
-        </View>
-      );
-    });
+    const totalsList = this.renderTotalsList();
+    const totalPrice = this.renderTotalPrice();
+
     return (
-      <Tile
-        imageSrc={{require: ('./images/logo.jpg')}}
-        title={ 'Current Order' }
-        contentContainerStyle={{height: 70}}
+      <Card
+        title={'Current Order'}
       >
-        <View style={styles.totalsText}>
-          { totalsText }
-        </View>
-      </Tile>
+        { totalsList }
+        { totalPrice }
+      </Card>
     );
   }
 
@@ -138,15 +161,13 @@ class ViewOrder extends Component {
     }
     const items = this.renderItems();
     const orderStatus = this.renderOrderStatus();
+    const { width, height } = Dimensions.get('window');
+    const fullScreen = { width, height };
     return (
-      <View>
+      <ScrollView>
         { orderStatus }
-        <ScrollView>
-
-          { items }
-        </ScrollView>
-      </View>
-
+        { items }
+      </ScrollView>
     );
   }
 

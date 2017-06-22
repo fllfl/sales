@@ -4,10 +4,7 @@ export default `
     confirmed
     seen
     cancelled
-    listing {
-      id
-      name
-    }
+    totalPrice
     totals {
       price
       amount
@@ -17,8 +14,13 @@ export default `
         stateOf {
           id
           fullName
+          image
         }
       }
+    }
+    listing {
+      id
+      name
     }
     items(first: 99) {
       edges {
@@ -32,6 +34,7 @@ export default `
             stateOf {
               id
               fullName
+              image
             }
           }
         }

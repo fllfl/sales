@@ -10,3 +10,4 @@ pod 'Lock/TouchID'
 pod 'Lock/SMS'
 pod 'Lock/Email'
 pod 'Lock/Safari'
+

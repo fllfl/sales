@@ -59,7 +59,7 @@ export default class AuthService {
           return resolve(false);
         }
         this.auth = auth;
-        resolve(true);
+        resolve(auth);
       });
     });
   }

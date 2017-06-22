@@ -98,8 +98,14 @@ export default class App extends Component {
   }
 
   login() {
-    auth0.login({connections: ["touchid"]}).then(
-      auth => this.onLoggedIn(auth));
+    auth0.isLoggedIn().then((auth) => {
+      if(auth) {
+        this.onLoggedIn(auth);
+        return;
+      }
+      auth0.login({connections: ["touchid"]}).then(
+        auth => this.onLoggedIn(auth));
+    });
   }
 
   setupAuth() {
