@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-
+import { SideMenu, List, ListItem } from 'react-native-elements'
 import ErrorUtils from 'ErrorUtils';
 import TabsContainer from './components/TabsContainer';
 import AuthService from './auth/AuthService';
@@ -15,13 +15,16 @@ import Auth0Credentials from './auth/Auth0Credentials';
 import { ApolloClient, createNetworkInterface, ApolloProvider } from 'react-apollo';
 import { gql, graphql } from 'react-apollo';
 
-const auth0 = new AuthService(Auth0Credentials.clientId, Auth0Credentials.uri);
+const { clientId, uri } = Auth0Credentials;
+const auth0 = new AuthService(clientId, uri);
 
 const toBind = [
   'setupApollo',
-  'checkAuth',
+  //'checkAuth',
   'login',
   'isErrorState',
+  'onSideMenuChange',
+  'toggleSideMenu',
 ];
 
 export default class App extends Component {
@@ -29,22 +32,20 @@ export default class App extends Component {
   constructor() {
     super();
     this.state = {
-      client: null,
       auth: null,
+      isOpen: false,
     };
-
-    /*this.setupErrors = ErrorUtils.setGlobalHandler((e) => {
-      console.log(e);
-      this.setState({
-        selectedTab: 'error',
-      });
-      setTimeout(() =>  {
-        this.setupApollo();
-        this.setState({
-          selectedTab: 'offers',
-        })
-      }, 3000);
-    });*/
+    ErrorUtils.setGlobalHandler((e) => {
+      console.log("I FOUND AN ERROR", e);
+      console.error(e);
+      setTimeout(() => {
+        auth0.isLoggedIn().then(auth => {
+          if(!auth) {
+            this.login();
+          }
+        });
+      }, 5000);
+    });
 
     toBind.forEach(funcName => {
       this[funcName] = this[funcName].bind(this);
@@ -52,21 +53,24 @@ export default class App extends Component {
   }
 
   componentDidMount() {
-    this.setupAuth();
+    this.login();
+  }
+
+  onSideMenuChange (isOpen: boolean) {
+    this.setState({
+      isOpen: isOpen
+    });
+  }
+
+  toggleSideMenu () {
+    this.setState({
+      isOpen: !this.state.isOpen
+    });
   }
 
   componentWillReceiveProps(nextProps, nextState) {
-
-    console.log("asdasd", nextProps, nextState);
-
     if(!nextState.auth) {
       this.login();
-    }
-    if(!(nextState.client && !nextState.client.error)) {
-      auth0.logout();
-      this.setState({
-        auth: null,
-      });
     }
   }
 
@@ -75,55 +79,30 @@ export default class App extends Component {
       this.setState({
         auth: null,
       });
+      return;
     }
-    console.log(auth);
     this.setState({
       auth,
     });
-
-    /*this.authInterval = setInterval(() => {
-      this.checkAuth();
-    }, 5000);*/
-
     this.setupApollo();
-  }
 
-  checkAuth() {
-    if(!auth0.isLoggedIn()) {
-      this.setState({
-        auth: null,
+    clearInterval(this.authInterval);
+    this.authInterval = setInterval(() => {
+      auth0.isLoggedIn().then(auth => {
+        if(!auth) {
+          this.login();
+        }
       });
-      this.setupAuth();
-    }
+    }, 2500);
   }
 
   login() {
-    auth0.isLoggedIn().then((auth) => {
-      if(auth) {
-        this.onLoggedIn(auth);
-        return;
-      }
-      auth0.login({connections: ["touchid"]}).then(
-        auth => this.onLoggedIn(auth));
-    });
-  }
-
-  setupAuth() {
-
-    return this.login();
-
-    auth0.isLoggedIn().then(isLoggedIn => {
-      if(isLoggedIn) {
-        auth0.getToken()
-          .then((auth) => this.onLoggedIn(auth));
-      } else {
-        this.login();
-      }
-    });
+    auth0.logout({ removeTouch: false });
+    auth0.login().then(
+      auth => this.onLoggedIn(auth));
   }
 
   setupApollo() {
-
     const networkInterface = createNetworkInterface({
       //uri: 'http://172.104.55.56:5003/graphql',
       uri: 'http://localhost:5003/graphql'
@@ -132,7 +111,7 @@ export default class App extends Component {
     networkInterface.use([{
       applyMiddleware: (req, next) => {
         if (!req.options.headers) {
-          req.options.headers = {};  // Create the header object if needed.
+          req.options.headers = {};
         }
         req.options.headers.authorization = `Bearer ${this.state.auth.token.idToken}`
         next();
@@ -142,11 +121,7 @@ export default class App extends Component {
       networkInterface: networkInterface,
       dataIdFromObject: r => r.id,
     });
-
-    this.setState({
-      client,
-    });
-
+    this.setState({ client });
   }
 
   renderError() {
@@ -164,23 +139,56 @@ export default class App extends Component {
   }
 
   isErrorState() {
-    const { client, auth } = this.state;
+    const { client } = this.state;
     const err = !(client && !client.error);
-    if(client) {
-      console.log(client.error);
-    }
-
     return err;
   }
 
   render() {
-    if(this.isErrorState()) {
+
+    const MenuComponent = (
+      <View style={{flex: 1, backgroundColor: '#ededed', paddingTop: 50}}>
+        <List containerStyle={{marginBottom: 20}}>
+          <ListItem
+            roundAvatar
+            onPress={() => console.log('Pressed')}
+            avatar={{uri: 'http://i2.cdn.cnn.com/cnnnext/dam/assets/161107120239-01-trump-parry-super-169.jpg'}}
+            key={'234234234'}
+            title={'TRUMP'}
+            subtitle={'call on cellphone now'}
+          />
+        </List>
+      </View>
+    );
+
+    if(!this.state.auth) {
+      const { height, width } = Dimensions.get('window');
+      const fullScrn = { width };
+      return (
+        <View>
+          <Image
+            source={require('./images/logo.png')}
+            style={fullScrn}
+            resizeMode={'contain'}
+          />
+        </View>
+      )
+    }
+    if(!this.state.client) {
       return this.renderError();
     }
     return (
       <ApolloProvider
         client={this.state.client}>
-        <TabsContainer />
+        <SideMenu
+          isOpen={this.state.isOpen}
+          onChange={this.onSideMenuChange.bind(this)}
+          menu={MenuComponent}
+        >
+          <TabsContainer
+            toggleSideMenu={this.toggleSideMenu.bind(this)}
+          />
+        </SideMenu>
       </ApolloProvider>
     );
   }
