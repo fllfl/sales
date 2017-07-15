@@ -50,15 +50,18 @@ class AddToOrderForm extends Component {
   }
 
   addToOrder() {
-    console.log(this.props);
 
+    const orderItemInput = {
+      state_id: this.props.item.state.id,
+      amount: this.state.amount,
+      price: this.getPrice().price,
+      order_id: this.props.order.id,
+    };
+    console.log(orderItemInput);
     this.props.mutate({
       variables: {
         input: {
-          state_id: this.props.item.state.id,
-          amount: this.state.amount,
-          price: this.getPrice().price,
-          order_id: this.props.order.id,
+          orderItem: orderItemInput,
         },
       }
     }).then(({ data }) => {
@@ -123,25 +126,21 @@ class AddToOrderForm extends Component {
 
 
 const CreateOrderItemMutation = gql`
-  mutation createOrderItem($input: CreateOrderItemInput!) {
-    createOrderItem(input: $input) {
-      order {
-        id
-        items {
-          edges {
-            node {
+  mutation CreateOrderItemMutation($input: CreateOrderItemMutationInput!) {
+    CreateOrderItemMutation(input: $input) {
+        order {
+          id
+          items {
+            id
+            amount
+            price
+            state {
               id
-              amount
-              price
-              state {
-                id
-              }
             }
           }
         }
       }
     }
-  }
 `;
 
 
