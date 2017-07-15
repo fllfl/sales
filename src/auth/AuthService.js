@@ -11,67 +11,83 @@ export default class AuthService {
     this.isLoggedIn = this.isLoggedIn.bind(this);
     this.getToken = this.getToken.bind(this);
     this.setToken = this.setToken.bind(this);
-    this.token = null;
     this.logout = this.logout.bind(this);
+    this.onLogin = this.onLogin.bind(this);
   }
 
   setToken(auth){
-    return AsyncStorage.setItem(`auth`, JSON.stringify(auth));
+    return Promise.all([
+      AsyncStorage.setItem(`auth`, JSON.stringify(auth)),
+      AsyncStorage.setItem(`touchID`, "true"),
+    ]);
+  }
+
+  onLogin(err, profile, token, resolve, reject) {
+    if(err || !(token && profile)) {
+      reject(err);
+      this.logout();
+      return;
+    }
+    this.setToken({ profile, token }).then(
+      () => resolve({ profile, token })).catch(e => reject(e));
   }
 
   login(options = {}) {
-    const onLogin = (err, profile, token, resolve, reject) => {
-      if(err) {
-        this.logout();
-        reject(err);
-      }
-      this.setToken({ profile, token }).then(() => resolve({ profile, token }));
-    };
-
-    const standardOptions =  {
+    const standardOptions = {
       closable: true,
-      //scopes: 'offiline_access',
+      scopes: ['offline_access'],
+      defaultADUsernameFromEmailPrefix: true,
+      cleanOnError: true,
       authParams: {
         connection: 'Username-Password-Authentication',
       },
-    }
-    return new Promise((resolve, reject) => {
-      this.lock.show(Object.assign({}, standardOptions, options),
-        (err, profile, token) => onLogin(err, profile, token, resolve, reject));
-    });
+    };
+    const touchOpt = { connections: ["touchid"] };
+    return new Promise(
+      (resolve, reject) => AsyncStorage.getItem(`touchID`).then(
+        (touchid) => {
+          const opt = Object.assign({}, standardOptions, options);
+          if(touchid) {
+            Object.assign(opt, touchOpt);
+          }
+          this.lock.show(opt, (err, profile, token) =>  {
+            this.onLogin(err, profile, token, resolve, reject)
+          });
+        }).catch(e => {
+          reject(e)
+          console.error(e);
+        }));
   }
 
-  isTokenGood({ token }) {
+  isTokenGood(token) {
     const now =  Math.floor(Date.now() / 1000);
     return !!(token && (jwtDecode(token.idToken).exp >= now));
   }
 
   isLoggedIn() {
-    if(this.auth && this.auth.token) {
-      return Promise.resolve(this.isTokenGood(this.auth.token));
-    }
-    return new Promise(resolve => {
-      this.getToken().then(auth => {
+    return new Promise(
+      resolve => this.getToken().then(auth => {
         if (!auth) {
           return resolve(false);
         }
-        if (!this.isTokenGood(auth)) {
+        if (!this.isTokenGood(auth.token)) {
           return resolve(false);
         }
-        this.auth = auth;
         resolve(auth);
-      });
-    });
+      }));
   }
 
   getToken() {
     return new Promise(
       resolve => AsyncStorage.getItem(`auth`).then(
-        (result) => resolve(JSON.parse(result))));
+        (result) => resolve(result && JSON.parse(result))));
   }
 
-  logout() {
-    // Clear user token and profile data from local storage
-    AsyncStorage.removeItem(`auth`);
+  logout(options={}) {
+    const prom = options.removeTouch ? AsyncStorage.removeItem(`touchID`) : () => Promise.resolve();
+    return Promise.all([
+      AsyncStorage.removeItem(`auth`),
+      prom,
+    ]);
   }
 }
