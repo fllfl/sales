@@ -9,7 +9,8 @@ import {
 import { PricingCard, ListItem, Button, Card, List } from 'react-native-elements'
 import {  gql, graphql } from 'react-apollo';
 import SupplierAccOrder from '../queries/SupplierAccOrder';
-import AddToOrderForm from './AddToOrderForm';
+import AddToOrderForm from './forms/AddToOrderForm';
+import moment from 'moment';
 
 const styles = {
   buyButtonStyle: {
@@ -40,40 +41,89 @@ class ViewOrder extends Component {
 
   constructor() {
     super();
-    this.getOrder = this.getOrder.bind(this);
+    this.getOrders = this.getOrders.bind(this);
+    this.renderOrderStatus = this.renderOrderStatus.bind(this);
   }
 
-  renderItem({ price, amount, state, id }) {
-    const title = `${state.stateOf.fullName} ${state.fullName}`;
-    const onPress = () => this.onOrderButtonPress(item);
+  renderItem(itemsState, i) {
+    const {
+      item_ids,
+      price,
+      productName,
+      order_id,
+      updatedAt,
+      amount,
+      stateName
+    } = itemsState;
 
+    console.log(itemsState);
+
+    const title = `${productName}\n${stateName}`;
+    const onPress = () => this.onOrderButtonPress(order_id, item_ids);
+    const infos = [
+      `Updated: ${updatedAt.fromNow()}`,
+      `${amount.toFixed(2)} kg`,
+      `GST $${(price * 0.15).toFixed(2)}`,
+    ];
     return (
       <PricingCard
-        key={ `order-view-priceing-card-${id}` }
-        color='#777777'
+        key={ `order-view-priceing-card-${i}=${order_id}` }
+        color='rgb(0, 204, 0)'
         title={title}
         price={`$${price.toFixed(2)}`}
-        info={[`${amount.toFixed(2)} kg`, `GST $${(price * 0.15).toFixed(2)}`]}
+        info={infos}
         button={{ title: 'Rate', icon: 'star' }}
       />
     );
   }
 
-  getOrder() {
-    const supplierAccEdge = this.props.data.viewer.organisation.supplierAccounts.edges[0];
-    if(!(supplierAccEdge && supplierAccEdge.node.currentOrder)) {
-      return null;
+  getOrders() {
+    if(!(this.props.data && this.props.data.viewer.organisation)){
+      return [];
     }
-    const order = supplierAccEdge.node.currentOrder;
-    return order;
+    return this.props.data.viewer.organisation.supplierAccounts.filter(node => !!node.currentOrder).map(
+        (acc) => acc.currentOrder);
   }
 
   renderItems() {
-    const order = this.getOrder();
-    if(!order) {
-      return null;
-    }
-    return order.items.edges.map(e => e.node).map(i => this.renderItem(i));
+    const states = {};
+    const items = [];
+    const orders = this.getOrders();
+    orders.forEach(order => {
+      order.items.forEach(oi => {
+        const key = `${oi.state.id}`;
+        const updatedAt = moment(oi.updatedAt);
+        if(!states[key]){
+          states[key] = {
+            order_id: order.id,
+            amount: oi.amount,
+            price: oi.price,
+            itemsCount: 1,
+            stateName: oi.state.fullName,
+            productName: oi.state.stateOf.fullName,
+            updatedAt: updatedAt,
+            item_ids: [oi.id],
+          };
+        } else {
+          const st = states[key];
+          st.amount += oi.amount;
+          st.items += 1;
+          st.price += oi.price;
+          if (st.updatedAt.isBefore(updatedAt)){
+            st.updatedAt = updatedAt;
+          }
+          st.item_ids.push(oi.id);
+        }
+      });
+    });
+    Object.keys(states).forEach((k, i) => {
+      items.push(this.renderItem(states[k], i));
+    });
+    return (
+      <View>
+        { items }
+      </View>
+    )
   }
 
   renderStatusIcons({ cancelled, confirmed, seen }) {
@@ -103,26 +153,34 @@ class ViewOrder extends Component {
     )
   }
 
-  renderTotalsList() {
-    const items = this.getOrder().totals.map((t, i) => (
+  renderTotalsListItem(state, total, i) {
+    return (
       <ListItem
         roundAvatar
         key={`totals Text ListItem ${i}`}
-        title={t.state.stateOf.fullName}
-        subtitle={`${t.state.fullName}    ${t.amount}kg    $${t.price.toFixed(2)}`}
-        avatar={{uri:t.state.stateOf.image}}
+        title={state.stateOf.fullName}
+        subtitle={`${state.fullName}    ${total.amount}kg    $${total.price.toFixed(2)}`}
+        avatar={{uri:state.stateOf.image}}
         hideChevron={ true }
       />
-    ));
+  );
+  }
+
+  renderTotalsList(order) {
+    if(!order) {
+      return null;
+    }
+    console.log(order.totals)
+    const totals = order.totals.map((t, i) => this.renderTotalsListItem(t.state, t, i));
     return (
       <List style={styles.totalsList}>
-        { items }
+        { totals }
       </List>
     );
   }
 
-  renderTotalPrice() {
-    const totalPrice = this.getOrder().totalPrice;
+  renderTotalPrice(order) {
+    const totalPrice = order.totalPrice;
     const priceDesc = `total: $${totalPrice.toFixed(2)}`;
     const taxDesc = `GST: $${(totalPrice * 0.15).toFixed(2)}`;
     return [priceDesc, taxDesc].map((desc, i) => (
@@ -137,16 +195,16 @@ class ViewOrder extends Component {
     ));
   }
 
-  renderOrderStatus() {
-    const order = this.getOrder();
+  renderOrderStatus(order) {
     if(!order) {
       return null;
     }
-    const totalsList = this.renderTotalsList();
-    const totalPrice = this.renderTotalPrice();
+    const totalsList = this.renderTotalsList(order);
+    const totalPrice = this.renderTotalPrice(order);
 
     return (
       <Card
+        key={ `order-status-${order.id}`}
         title={'Current Order'}
       >
         { totalsList }
@@ -159,8 +217,9 @@ class ViewOrder extends Component {
     if(!this.props.data.viewer) {
       return null;
     }
+
     const items = this.renderItems();
-    const orderStatus = this.renderOrderStatus();
+    const orderStatus = this.getOrders().map(this.renderOrderStatus);
     const { width, height } = Dimensions.get('window');
     const fullScreen = { width, height };
     return (
@@ -169,7 +228,7 @@ class ViewOrder extends Component {
         { items }
       </ScrollView>
     );
-  }
+    }
 
 }
 

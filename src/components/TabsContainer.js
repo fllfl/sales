@@ -10,6 +10,8 @@ import {  gql, graphql } from 'react-apollo';
 
 import ProductsScroll from './ProductsScroll';
 import ViewOrder from './ViewOrder';
+import Home from './Home';
+
 
 const styles = {
   container: {
@@ -31,7 +33,9 @@ const styles = {
     icon: {
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 14
+      top: 5,
+      backgroundColor: 'red',
+      position: 'absolute',
     },
   }
 }
@@ -39,6 +43,7 @@ const styles = {
 const colors = {
   selectedIcon: '#6296f9',
   icon: '#5e6977',
+  iconUnderlay: '#52c4f2',
 }
 
 const toBind = [
@@ -55,7 +60,7 @@ class TabsContainer extends Component {
   constructor() {
     super();
     this.state = {
-      selectedTab: 'offers',
+      selectedTab: 'home',
     };
 
     toBind.forEach(funcName => {
@@ -87,28 +92,32 @@ class TabsContainer extends Component {
     this.setState({selectedTab})
   }
 
-  renderIcon(name) {
+  renderIcon(name, type=null) {
     return (
-      <Icon containerStyle={styles.icon} color={colors.icon} name={name} size={33} />
+      <Icon containerStyle={styles.icon} color={colors.icon} name={name} type={type} size={26} underlayColor={colors.iconUnderlay} />
     );
   }
 
-  renderSelectedIcon(name) {
+  renderSelectedIcon(name, type) {
     return (
-      <Icon color={styles.icon} name={name} size={30} />
+      <Icon name={name} color={colors.selectedIcon} size={30} type={type} underlayColor={colors.iconUnderlay} />
     );
   }
 
   renderTabContent(text) {
 
     switch (text) {
-      case 'offers':
+      case 'fish':
         return (
           <ProductsScroll />
         );
-      case 'my orders':
+      case 'cart':
         return (
           <ViewOrder />
+        );
+      case 'home':
+        return (
+          <Home />
         );
     }
 
@@ -116,7 +125,7 @@ class TabsContainer extends Component {
 
   }
 
-  renderTab(text, iconName) {
+  renderTab(text, iconName, iconType) {
     const content = (
       <View>
         { this.renderTabContent(text) }
@@ -129,8 +138,8 @@ class TabsContainer extends Component {
         selectedTitleStyle={styles.tabs.selectedTitle}
         selected={ this.state.selectedTab === text }
         title={text}
-        renderIcon={() => this.renderIcon(iconName)}
-        renderSelectedIcon={() => this.renderSelectedIcon(iconName)}
+        renderIcon={() => this.renderIcon(iconName, iconType)}
+        renderSelectedIcon={() => this.renderSelectedIcon(iconName, iconType)}
         onPress={() => this.changeTab(text)}>
         { content }
       </Tab>
@@ -140,8 +149,9 @@ class TabsContainer extends Component {
   renderTabs() {
     return (
       <Tabs>
-        { this.renderTab('offers', 'local-offer') }
-        { this.renderTab('my orders', 'history') }
+        { this.renderTab('home', 'ios-home', 'ionicon') }
+        { this.renderTab('fish', 'ship', 'font-awesome') }
+        { this.renderTab('cart', 'ios-cart', 'ionicon') }
       </Tabs>
     );
   }
@@ -149,6 +159,9 @@ class TabsContainer extends Component {
   render() {
     const { height, width } = Dimensions.get('window');
     const tabs = this.renderTabs();
+    if(!this.props.data && this.props.data.viewer) {
+
+    }
     return (
       <View style={ [styles.container, { width, height }] }>
         { tabs }

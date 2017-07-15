@@ -2,13 +2,15 @@ import React, { Component } from 'react';
 import {
   ScrollView,
   Text,
+  View,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { Card, ListItem, Button } from 'react-native-elements'
 import {  gql, graphql } from 'react-apollo';
 import SupplierAccListing from '../queries/SupplierAccListing';
-import AddToOrderForm from './AddToOrderForm';
+import AddToOrderForm from './forms/AddToOrderForm';
 
 const styles = {
   cardText: {
@@ -29,9 +31,11 @@ class ProductsScroll extends Component {
     this.state = {
       addingItem: null,
     };
+    this.renderItem = this.renderItem.bind(this);
   }
 
-  renderItem(item, { seen, confirmed, cancelled }) {
+  renderItem(item,listing) {
+    const  { seen, confirmed, cancelled } = listing;
     const { price, state, id } = item;
     const description = `
       ${state.stateOf.description}
@@ -40,12 +44,10 @@ class ProductsScroll extends Component {
       ${state.stateOf.fullName}
       ${state.fullName} - $${price}.00
     `;
-
     const onPress = () => this.onOrderButtonPress(item);
-
     return (
       <Card
-        key={ `product-card-${id}` }
+        key={ `product-card-${id}-${listing.id}` }
         title={title}
         image={ { uri: state.stateOf.image } }>
         <Text style={styles.cardText}>
@@ -56,7 +58,7 @@ class ProductsScroll extends Component {
           backgroundColor={'#03A9F4'}
           buttonStyle={styles.buyButtonStyle}
           title='ORDER NOW'
-          onPress={onPress}
+          onPress={ onPress }
         />
       </Card>
     );
@@ -69,37 +71,53 @@ class ProductsScroll extends Component {
   }
 
   renderItems() {
-    const supplierAccEdge = this.props.data.viewer.organisation.supplierAccounts.edges[0];
-    if(!supplierAccEdge) {
+    const supplierAccounts = this.getSupplierAccounts();
+    const allListings = supplierAccounts.map(
+      ({ customerGroup }) => customerGroup.currentListing);
+    if(!allListings.length) {
       return null;
     }
-    const listing = supplierAccEdge.node.customerGroup.currentListing;
-    if(listing) {
-      return listing.items.edges.map(e => e.node).map(i => this.renderItem(i, listing));
-    }
-    return null;
+    const items = [];
+    allListings.forEach(
+      l => l.items.forEach(
+        item => items.push(this.renderItem(item, l))));
+    return (
+      <View>
+        { items }
+      </View>
+    )
   }
 
   renderAddToOrder() {
     if(!this.state.addingItem) {
       return null;
     }
-    const acc = this.props.data.viewer.organisation.supplierAccounts.edges[0].node;
+    const supplierAccounts = this.getSupplierAccounts();
+    const currentOrders = supplierAccounts.map(sa => sa.currentOrder);
+    const orders = currentOrders.map(
+        (currentOrder, i) => (
+          <AddToOrderForm
+            key={ `current-order-${currentOrder.id}-${i}` }
+            item={ this.state.addingItem }
+            goBack={() => this.setState({addingItem: null})}
+            order={ currentOrder }
+          />
+        ));
     return (
-      <AddToOrderForm
-        item={this.state.addingItem}
-        goBack={() => this.setState({addingItem: null})}
-        order={acc.currentOrder}
-      />
+      <View>
+        { orders }
+      </View>
     )
   }
 
-  render() {
-    console.log(this.props.data);
-    if(!this.props.data.viewer) {
-      return null;
+  getSupplierAccounts(){
+    if(!this.props.data && this.props.data.viewer) {
+      return [];
     }
+    return this.props.data.viewer.organisation.supplierAccounts;
+  }
 
+  render() {
     const items = this.renderItems();
     const addToOrder = this.renderAddToOrder();
      if(addToOrder) {

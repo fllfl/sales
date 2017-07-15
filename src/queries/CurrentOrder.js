@@ -22,21 +22,19 @@ export default `
       id
       name
     }
-    items(first: 99) {
-      edges {
-        node {
+    items {
+      id
+      amount
+      price
+      updatedAt
+      createdAt
+      state {
+        id
+        fullName
+        stateOf {
           id
-          amount
-          price
-          state {
-            id
-            fullName
-            stateOf {
-              id
-              fullName
-              image
-            }
-          }
+          fullName
+          image
         }
       }
     }

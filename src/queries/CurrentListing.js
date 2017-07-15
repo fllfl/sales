@@ -2,24 +2,20 @@ export default `
   currentListing {
     id
     name
-    items(first: 107) {
-      edges {
-        node {
+    items {
+      id
+      price
+      state {
+        id
+        fullName
+        stateOf {
           id
-          price
-          state {
-            id
-            fullName
-            stateOf {
-              id
-              image
-              description
-              otherNames
-              kgPerBin
-              code
-              fullName
-            }
-          }
+          image
+          description
+          otherNames
+          kgPerBin
+          code
+          fullName
         }
       }
     }

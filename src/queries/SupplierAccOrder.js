@@ -1,15 +1,17 @@
 import CurrentOrder from './CurrentOrder';
 import CurrentListing from './CurrentListing';
 export default `
-  supplierAccounts(first: 99) {
-    edges {
-      node {
+  supplierAccounts {
+    id
+    name
+    ${CurrentOrder}
+    customerGroup {
+      id
+      name
+      organisation {
         id
-        ${CurrentOrder}
-        customerGroup {
-          id
-          ${CurrentListing}
-        }
+        name
       }
+      ${CurrentListing}
     }
   }`;
