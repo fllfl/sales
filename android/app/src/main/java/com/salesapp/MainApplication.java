@@ -3,6 +3,7 @@ package com.salesapp;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.cardio.RNCardIOPackage;
 import com.auth0.lock.react.LockReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.facebook.react.ReactNativeHost;
@@ -25,6 +26,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNCardIOPackage(),
             new LockReactPackage(),
             new VectorIconsPackage()
       );

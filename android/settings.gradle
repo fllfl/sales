@@ -1,4 +1,6 @@
 rootProject.name = 'SalesApp'
+include ':react-native-awesome-card-io'
+project(':react-native-awesome-card-io').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-awesome-card-io/android')
 include ':react-native-lock'
 project(':react-native-lock').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-lock/android')
 include ':react-native-vector-icons'
